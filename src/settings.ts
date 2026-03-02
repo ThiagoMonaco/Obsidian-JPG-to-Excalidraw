@@ -1,15 +1,17 @@
-import {App, PluginSettingTab, Setting} from "obsidian";
+import { App, PluginSettingTab, Setting } from "obsidian";
 import MyPlugin from "./main";
 
-export interface MyPluginSettings {
-	mySetting: string;
+export interface JpgToSvgSettings {
+	sourceDirectory: string
+	destinationFile: string
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+export const DEFAULT_SETTINGS: JpgToSvgSettings = {
+	sourceDirectory: 'Inputs',
+    destinationFile: 'Output.excalidraw.md'
 }
 
-export class SampleSettingTab extends PluginSettingTab {
+export class JpgToSvgSettingTab extends PluginSettingTab {
 	plugin: MyPlugin;
 
 	constructor(app: App, plugin: MyPlugin) {
@@ -18,19 +20,30 @@ export class SampleSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		const {containerEl} = this;
+		const { containerEl } = this;
 
 		containerEl.empty();
 
-		new Setting(containerEl)
-			.setName('Settings #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
+        new Setting(containerEl)
+            .setName('Source Directory')
+            .setDesc('Directory containing JPG images to convert')
+            .addText(text => text
+                .setPlaceholder('Inputs')
+                .setValue(this.plugin.settings.sourceDirectory)
+                .onChange(async (value) => {
+                    this.plugin.settings.sourceDirectory = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('Destination File')
+            .setDesc('Excalidraw file to append the SVGs to')
+            .addText(text => text
+                .setPlaceholder('Output.excalidraw.md')
+                .setValue(this.plugin.settings.destinationFile)
+                .onChange(async (value) => {
+                    this.plugin.settings.destinationFile = value;
+                    await this.plugin.saveSettings();
+                }));
 	}
 }
