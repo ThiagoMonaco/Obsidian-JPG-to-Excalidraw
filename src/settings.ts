@@ -1,20 +1,20 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
-import MyPlugin from "./main";
+import JpgToSvgPlugin from "./main";
 
 export interface JpgToSvgSettings {
 	sourceDirectory: string
-	destinationFile: string
+	destinationDirectory: string
 }
 
 export const DEFAULT_SETTINGS: JpgToSvgSettings = {
 	sourceDirectory: 'Inputs',
-    destinationFile: 'Output.excalidraw.md'
+    destinationDirectory: 'Output.excalidraw.md'
 }
 
 export class JpgToSvgSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+	plugin: JpgToSvgPlugin;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: JpgToSvgPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -25,7 +25,7 @@ export class JpgToSvgSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
         new Setting(containerEl)
-            .setName('Source Directory')
+            .setName('Source directory')
             .setDesc('Directory containing JPG images to convert')
             .addText(text => text
                 .setPlaceholder('Inputs')
@@ -36,13 +36,13 @@ export class JpgToSvgSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('Destination File')
-            .setDesc('Excalidraw file to append the SVGs to')
+            .setName('Destination directory')
+            .setDesc('Directory to save the converted Excalidraw SVG files')
             .addText(text => text
-                .setPlaceholder('Output.excalidraw.md')
-                .setValue(this.plugin.settings.destinationFile)
+                .setPlaceholder('Outputs')
+                .setValue(this.plugin.settings.destinationDirectory)
                 .onChange(async (value) => {
-                    this.plugin.settings.destinationFile = value;
+                    this.plugin.settings.destinationDirectory = value;
                     await this.plugin.saveSettings();
                 }));
 	}
