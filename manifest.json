@@ -4,8 +4,8 @@
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "Convert JPGS to Excalidraw converting drawing elements",
-	"author": "Obsidian",
+	"author": "ThiagoMonaco",
 	"authorUrl": "https://github.com/ThiagoMonaco",
 	"fundingUrl": "",
-	"isDesktopOnly": false
+	"isDesktopOnly": true 
 }

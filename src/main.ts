@@ -1,23 +1,30 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS, JpgToSvgSettings, JpgToSvgSettingTab } from "./settings";
+import { Processor } from 'processor';
 
 export default class JpgToSvgPlugin extends Plugin {
 	settings: JpgToSvgSettings;
+	processor!: Processor;
+
 
 	async onload() {
 		await this.loadSettings();
+		this.processor = new Processor(this.app, this.settings);
+
 		this.addSettingTab(new JpgToSvgSettingTab(this.app, this));
 
 		this.addCommand({
 			id: 'convert-jpg-svg-excalidraw',
-			name: 'Convert JPGs to SVG and Import to Excalidraw',
+			name: 'Convert JPGs to SVG and import to Excalidraw',
 			callback: async () => {
-				console.log("Command!")
+				this.processor.settings = this.settings;
+                await this.processor.processFiles();
 			}
 		});
 
 		this.addRibbonIcon('image-file', 'JPG to SVG', (evt: MouseEvent) => {
-			console.log("Command!")
+			this.processor.settings = this.settings;
+			this.processor.processFiles();
 		});
 	}
 
@@ -30,21 +37,5 @@ export default class JpgToSvgPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-	}
-}
-
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		let { contentEl } = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
 	}
 }

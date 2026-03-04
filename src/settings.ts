@@ -8,7 +8,7 @@ export interface JpgToSvgSettings {
 
 export const DEFAULT_SETTINGS: JpgToSvgSettings = {
 	sourceDirectory: 'Inputs',
-    destinationDirectory: 'Output.excalidraw.md'
+    destinationDirectory: 'Outputs'
 }
 
 export class JpgToSvgSettingTab extends PluginSettingTab {
