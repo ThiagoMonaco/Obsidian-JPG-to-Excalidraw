@@ -1,9 +1,9 @@
 {
-	"id": "JPG-To-Excalidraw",
+	"id": "jpg-to-excalidraw",
 	"name": "JPG to Excalidraw",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Convert JPGS to Excalidraw converting drawing elements",
+	"description": "Convert JPGS to Excalidraw converting drawing elements.",
 	"author": "ThiagoMonaco",
 	"authorUrl": "https://github.com/ThiagoMonaco",
 	"fundingUrl": "",
