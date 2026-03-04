@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin } from 'obsidian';
+import { Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS, JpgToSvgSettings, JpgToSvgSettingTab } from "./settings";
 import { Processor } from 'processor';
 
@@ -15,16 +15,16 @@ export default class JpgToSvgPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'convert-jpg-svg-excalidraw',
-			name: 'Convert JPGs to SVG and import to Excalidraw',
+			name: 'Convert JPG to SVG and import to Excalidraw',
 			callback: async () => {
 				this.processor.settings = this.settings;
                 await this.processor.processFiles();
 			}
 		});
 
-		this.addRibbonIcon('image-file', 'JPG to SVG', (evt: MouseEvent) => {
+		this.addRibbonIcon('image-file', 'Convert images', (_evt: MouseEvent) => {
 			this.processor.settings = this.settings;
-			this.processor.processFiles();
+			void this.processor.processFiles();
 		});
 	}
 

@@ -1,7 +1,22 @@
-import { App, FileSystemAdapter, TFolder, TFile, Notice, normalizePath, WorkspaceLeaf } from 'obsidian';
+import { App, TFolder, TFile, Notice, normalizePath } from 'obsidian';
 import { JpgToSvgSettings } from './settings';
 import { trace } from 'potrace';
 import { optimize } from 'svgo';
+
+interface ExcalidrawAutomate {
+    reset(): void;
+    importSVG(svg: string): void;
+    create(options: { filename: string; foldername: string; onNewPane: boolean }): Promise<void>;
+    getViewState(): { viewBackgroundColor?: string };
+}
+
+interface SubpathData {
+    path: string;
+    firstX: number;
+    firstY: number;
+    p2d: Path2D;
+    depth?: number;
+}
 
 export class Processor {
     app: App;
@@ -13,7 +28,7 @@ export class Processor {
     }
 
     async processFiles() {
-        const ea = (window as any).ExcalidrawAutomate;
+        const ea = (window as unknown as { ExcalidrawAutomate?: ExcalidrawAutomate }).ExcalidrawAutomate;
         if (!ea) {
             new Notice('Excalidraw plugin not found! Please install/enable Excalidraw.');
             return;
@@ -28,7 +43,7 @@ export class Processor {
             return;
         }
 
-        const files = folder.children.filter(f => f instanceof TFile && (f.extension === 'jpg' || f.extension === 'jpeg'));
+        const files = folder.children.filter((f): f is TFile => f instanceof TFile && (f.extension === 'jpg' || f.extension === 'jpeg'));
 
         if (files.length === 0) {
             new Notice('No JPG files found in source directory.');
@@ -39,10 +54,10 @@ export class Processor {
 
         for (const file of files) {
             try {
-                const svg = await this.convertFileToSvg(file as TFile);
+                const svg = await this.convertFileToSvg(file);
                 if (svg) {
                     const optimizedSvg = this.optimizeSvg(svg);
-                    await this.createExcalidrawFile(optimizedSvg, file as TFile, ea);
+                    await this.createExcalidrawFile(optimizedSvg, file, ea);
                     successCount++;
                 }
             } catch (error) {
@@ -58,12 +73,21 @@ export class Processor {
 
     async convertFileToSvg(file: TFile): Promise<string> {
         const arrayBuffer = await this.app.vault.readBinary(file);
-        const buffer = Buffer.from(arrayBuffer);
+        const uint8Array = new Uint8Array(arrayBuffer);
+        
+        let binary = '';
+        const len = uint8Array.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(uint8Array[i]!);
+        }
+        const base64 = btoa(binary);
+        const mimeType = file.extension.toLowerCase() === 'png' ? 'image/png' : 'image/jpeg';
+        const dataUrl = `data:${mimeType};base64,${base64}`;
 
-        const dominantColor = await this.extractDominantColor(buffer, file.extension);
+        const dominantColor = await this.extractDominantColor(uint8Array, file.extension);
 
         return new Promise((resolve, reject) => {
-            trace(buffer, {
+            trace(dataUrl, {
                 alphaMax: 0.5,
                 optTolerance: 0.1,
                 turdSize: 4,
@@ -79,7 +103,7 @@ export class Processor {
         });
     }
 
-    async extractDominantColor(buffer: Buffer, extension: string): Promise<string> {
+    async extractDominantColor(uint8Array: Uint8Array, extension: string): Promise<string> {
         return new Promise((resolve) => {
             const img = new Image();
             img.onload = () => {
@@ -119,15 +143,21 @@ export class Processor {
                         }
                     }
                     resolve(dominant);
-                } catch (e) {
-                    console.error("Canvas CORS error:", e);
+                } catch (_e) {
+                    console.error("Canvas CORS error:", _e);
                     resolve('#000000');
                 }
             };
             img.onerror = () => resolve('#000000');
 
             const mimeType = extension.toLowerCase() === 'png' ? 'image/png' : 'image/jpeg';
-            const base64 = buffer.toString('base64');
+            
+            let binary = '';
+            const len = uint8Array.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(uint8Array[i]!);
+            }
+            const base64 = btoa(binary);
             img.src = `data:${mimeType};base64,${base64}`;
         });
     }
@@ -141,8 +171,8 @@ export class Processor {
                 ],
             });
             return result.data;
-        } catch (e) {
-            console.error("SVGO optimization failed", e);
+        } catch (_e) {
+            console.error("SVGO optimization failed", _e);
             return svgContent;
         }
     }
@@ -161,7 +191,7 @@ export class Processor {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
 
-        const pathsData = subpathsStr.map(pathStr => {
+        const pathsData: SubpathData[] = subpathsStr.map(pathStr => {
             const numbers = pathStr.match(/-?\d+\.?\d*/g);
             if (!numbers) return null;
 
@@ -171,7 +201,7 @@ export class Processor {
             const p2d = new Path2D(pathStr.trim());
 
             return { path: pathStr.trim(), firstX, firstY, p2d };
-        }).filter(p => p !== null) as any[];
+        }).filter((p): p is SubpathData => p !== null);
 
         pathsData.forEach(p1 => {
             let enclosureCount = 0;
@@ -185,18 +215,18 @@ export class Processor {
             p1.depth = enclosureCount;
         });
 
-        const ea = (window as any).ExcalidrawAutomate;
+        const ea = (window as unknown as { ExcalidrawAutomate?: ExcalidrawAutomate }).ExcalidrawAutomate;
         let bgColor = '#ffffff';
         if (ea && typeof ea.getViewState === 'function') {
             try {
                 const vs = ea.getViewState();
                 if (vs && vs.viewBackgroundColor) bgColor = vs.viewBackgroundColor;
-            } catch (e) { /* ignore */ }
+            } catch { /* ignore */ }
         }
 
         let replacementPaths = '';
         pathsData.forEach(p => {
-            const fill = (p.depth % 2 === 0) ? fgColor : bgColor;
+            const fill = ((p.depth ?? 0) % 2 === 0) ? fgColor : bgColor;
             replacementPaths += `\n        <path d="${p.path}" fill="${fill}" stroke="none" />`;
         });
 
@@ -206,7 +236,7 @@ export class Processor {
         return newSvgString;
     }
 
-    async createExcalidrawFile(svg: string, originalFile: TFile, ea: any) {
+    async createExcalidrawFile(svg: string, originalFile: TFile, ea: ExcalidrawAutomate) {
         ea.reset();
 
         const destFolder = normalizePath(this.settings.destinationDirectory);
@@ -228,7 +258,6 @@ export class Processor {
 
 
     generateId(): string {
-        return Math.random().toString(36).substr(2, 9);
+        return Math.random().toString(36).substring(2, 11);
     }
 }
-
